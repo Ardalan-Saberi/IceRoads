@@ -7,13 +7,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import com.sandbox.iceroads.PolicyRule.Builder;
-import com.sandbox.iceroads.PolicyRule.Builder.WeightOrder;
-
 public class SchedulerPolicy {
 
 	private final Instant start;
 	private final List<PolicyRule> rules;
+
+	public Instant getStart() {
+		return start;
+	}
+
+	public List<PolicyRule> getRules() {
+		return rules;
+	}
 
 	public static class Builder {
 		private final Instant start;
@@ -23,25 +28,27 @@ public class SchedulerPolicy {
 			this.start = start;
 		}
 
-		public Builder addRule(int d, boolean isWeightAscending) {
+		public Builder addRule(int duration, boolean isWeightAscending) {
 			if (isWeightAscending) {
 				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_ASCENDING_COMPARATOR, d));
+						PolicyRule.WEIGHT_ASCENDING_COMPARATOR, duration));
 			} else {
 				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_DESCENDING_COMPARATOR, d));
+						PolicyRule.WEIGHT_DESCENDING_COMPARATOR, duration));
 			}
 			return this;
 		}
 
-		public Builder addRule(int d, boolean isWeightAscending,
-				Range<BigDecimal> w) {
+		public Builder addRule(int duration, boolean isWeightAscending,
+				Range<BigDecimal> weightRange) {
 			if (isWeightAscending) {
 				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_ASCENDING_COMPARATOR, d, w));
+						PolicyRule.WEIGHT_ASCENDING_COMPARATOR, duration,
+						weightRange));
 			} else {
 				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_DESCENDING_COMPARATOR, d, w));
+						PolicyRule.WEIGHT_DESCENDING_COMPARATOR, duration,
+						weightRange));
 			}
 			return this;
 		}
@@ -67,7 +74,7 @@ public class SchedulerPolicy {
 		this.rules = builder.rules;
 	}
 
-	private static class PolicyRule {
+	public static class PolicyRule {
 		private final Optional<Integer> duration;
 		private final Comparator<Shipment> comparator;
 		private final Optional<Range<BigDecimal>> weightRange;
@@ -113,6 +120,28 @@ public class SchedulerPolicy {
 
 		public Optional<Range<BigDecimal>> getWeightRange() {
 			return weightRange;
+		}
+
+		public boolean weightCheck(BigDecimal weight) {
+			boolean result = true;
+
+			if (weightRange.isPresent()) {
+				if (this.getWeightRange().get().getLowerBound().isPresent()
+						&& weight.compareTo(this.getWeightRange().get()
+								.getLowerBound().get()) <= 0) {
+					result = false;
+
+				}
+				if (this.getWeightRange().get().getUpperBound().isPresent()
+						&& weight.compareTo(this.getWeightRange().get()
+								.getUpperBound().get()) > 0) {
+					result = false;
+
+				}
+			}
+
+			return result;
+
 		}
 
 		public PolicyRule(Comparator<Shipment> comparator) {
