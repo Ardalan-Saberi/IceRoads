@@ -4,7 +4,6 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Arrays;
@@ -40,10 +39,17 @@ public class ShipmentSchedulerTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-				/*{ "test1.csv", null, null, ShipmentFileParsingError.class },
-				{ "test2.csv", "result2.csv", "expected2.csv", null },*/
-				//{ "test3.csv", "result3.csv", "expected3.csv", null },
-				{ "test4.csv", "result4.csv", "expected4.cs", null } });
+				{ "test1.csv", null, null, ShipmentFileParsingError.class},
+				{ "test2.csv", "result2.csv", "expected2.csv", null },
+				{ "test3.csv", "result3.csv", "expected3.csv", null },
+				{ "test4.csv", "result4.csv", "expected4.csv", null },
+				{ "test5.csv", "result5.csv", null, ShipmentFileParsingError.class},
+				{ "test6.csv", "result6.csv", null, ShipmentFileParsingError.class},
+				{ "test7.csv", "result7.csv", null, ShipmentFileParsingError.class },
+				{ "test8.csv", "result8.csv", null, ShipmentFileParsingError.class },
+				{ "test9.csv", "result9.csv", null, ShipmentFileParsingError.class },
+				{ "test10.csv", "result10.csv", null, ShipmentFileParsingError.class }
+				});
 	}
 
 	@Test
@@ -66,8 +72,7 @@ public class ShipmentSchedulerTest {
 			SchedulerPolicy policy;
 			policy = builder.build();
 
-			ShipmentScheduler.schedule(in, out, policy);
-			System.out.println (FileUtils.contentEquals(out, exp));
+			ShipmentScheduler.schedule(in, out, policy);			
 			assertTrue(FileUtils.contentEquals(out, exp));
 
 		} catch (Throwable t) {

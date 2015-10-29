@@ -24,8 +24,8 @@ public class ShipmentScheduler {
 	private static final Duration DURATION_PER_STEP = Duration.ofHours(1L);
 	private static final int SHIPMENT_PER_STEP = 7;
 	private static final String DELIMITER = ",";
-	private static int idColumnOrder, unitColumnOrder, weightColumnOrder,
-			priorityColumnOrder;
+	private static int idColumnOrder = -1, unitColumnOrder = -1,
+			weightColumnOrder = -1, priorityColumnOrder = -1;
 	private static final BigDecimal POUND_TO_KILOGRAM = new BigDecimal(
 			0.45359237);
 	private static final int NONE_PRIORITY = 4;
@@ -46,6 +46,10 @@ public class ShipmentScheduler {
 		public ShipmentFileParsingError(String message, Throwable cause) {
 			super(message, cause);
 		}
+
+		public ShipmentFileParsingError(String message) {
+			super(message);
+		}
 	};
 
 	public static class SchedulerOutputFileIOException extends RuntimeException {
@@ -54,12 +58,14 @@ public class ShipmentScheduler {
 		public SchedulerOutputFileIOException(String message, Throwable cause) {
 			super(message, cause);
 		}
+
 	};
 
 	public static void schedule(File in, File out, SchedulerPolicy policy)
 			throws IOException {
 
 		List<Shipment> shipmentList = parseShipmentList(in);
+
 		TimeSlot ts = new TimeSlot(policy.getStart());
 		LocalDateTime ruleStart = policy.getStart();
 		Shipment shipment;
@@ -128,9 +134,22 @@ public class ShipmentScheduler {
 				columnPosition++;
 			}
 
+			if (idColumnOrder == -1 || unitColumnOrder == -1
+					|| priorityColumnOrder == -1 || weightColumnOrder == -1) {
+				throw new ShipmentFileParsingError(
+						"Can't find correct header columns");
+			}
+
 			while ((line = reader.readLine()) != null) {
 				lineNumber++;
-				Shipment newShipment = parseShipment(line);
+				
+				Shipment newShipment;
+				
+				try{
+					newShipment = parseShipment(line);
+				}catch (ArrayIndexOutOfBoundsException aiob){
+					throw new ShipmentFileParsingError("Shipment arsing error at line " + lineNumber ,  aiob );
+				}
 				shipmentlist.add(newShipment);
 
 				logger.debug("Shipment Order Added (" + newShipment.toString()
@@ -203,7 +222,7 @@ public class ShipmentScheduler {
 		}
 
 		public void nextSlot() {
-			if (slot < SHIPMENT_PER_STEP + 1) {
+			if (slot < SHIPMENT_PER_STEP) {
 				slot++;
 			} else {
 				slot = 1;
