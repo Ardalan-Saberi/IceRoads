@@ -19,16 +19,16 @@ public class Range<T extends Comparable<T>> {
 	public static class IllegalRangeException extends Exception {
 		private static final long serialVersionUID = -3840903002864503185L;};
 
-	public class Builder {
+	public static final class Builder<T extends Comparable<T>> {
 		private T upperBound;
 		private T lowerBound;
 
-		public Builder setUpperBound(T u) {
+		public Builder<T> setUpperBound(T u) {
 			upperBound = u;
 			return this;
 		}
 
-		public Builder setLowerBound(T l) {
+		public Builder<T> setLowerBound(T l) {
 			lowerBound = l;
 			return this;
 		}

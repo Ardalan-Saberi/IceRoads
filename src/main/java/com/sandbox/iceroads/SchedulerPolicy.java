@@ -1,19 +1,19 @@
 package com.sandbox.iceroads;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 public class SchedulerPolicy {
-
-	private final Instant start;
+	private final LocalDateTime policyStart;
 	private final List<PolicyRule> rules;
 
-	public Instant getStart() {
-		return start;
+	public LocalDateTime getStart() {
+		return policyStart;
 	}
 
 	public List<PolicyRule> getRules() {
@@ -21,63 +21,39 @@ public class SchedulerPolicy {
 	}
 
 	public static class Builder {
-		private final Instant start;
+		private final LocalDateTime policyStart;
 		private final List<PolicyRule> rules = new ArrayList<PolicyRule>();
 
-		public Builder(Instant start) {
-			this.start = start;
+		public Builder(LocalDateTime policyStart) {
+			this.policyStart = policyStart;
 		}
 
-		public Builder addRule(int duration, boolean isWeightAscending) {
-			if (isWeightAscending) {
-				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_ASCENDING_COMPARATOR, duration));
-			} else {
-				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_DESCENDING_COMPARATOR, duration));
-			}
-			return this;
-		}
+		public Builder addRule(boolean isWeightAscending,Optional<Period> period,
+				Optional<Range<BigDecimal>> weightRange) {
 
-		public Builder addRule(int duration, boolean isWeightAscending,
-				Range<BigDecimal> weightRange) {
-			if (isWeightAscending) {
-				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_ASCENDING_COMPARATOR, duration,
-						weightRange));
-			} else {
-				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_DESCENDING_COMPARATOR, duration,
-						weightRange));
-			}
-			return this;
-		}
+			rules.add(new PolicyRule(
+					(isWeightAscending ? PolicyRule.WEIGHT_ASCENDING_COMPARATOR
+							: PolicyRule.WEIGHT_DESCENDING_COMPARATOR), period,
+					weightRange));
 
-		public Builder remainingRule(boolean isWeightAscending) {
-			if (isWeightAscending) {
-				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_ASCENDING_COMPARATOR));
-			} else {
-				this.rules.add(new PolicyRule(
-						PolicyRule.WEIGHT_DESCENDING_COMPARATOR));
-			}
 			return this;
 		}
 
 		public SchedulerPolicy build() {
+
 			return new SchedulerPolicy(this);
 		}
 	}
 
 	private SchedulerPolicy(Builder builder) {
-		this.start = builder.start;
+		this.policyStart = builder.policyStart;
 		this.rules = builder.rules;
 	}
 
-	public static class PolicyRule {
-		private final Optional<Integer> duration;
+	public static final class PolicyRule {
 		private final Comparator<Shipment> comparator;
 		private final Optional<Range<BigDecimal>> weightRange;
+		private final Optional<Period> period;
 
 		public static Comparator<Shipment> DEFAULT_COMPARATOR = new Comparator<Shipment>() {
 			@Override
@@ -110,10 +86,6 @@ public class SchedulerPolicy {
 			}
 		};
 
-		public Optional<Integer> getDuration() {
-			return duration;
-		}
-
 		public Comparator<Shipment> getComparator() {
 			return comparator;
 		}
@@ -121,8 +93,13 @@ public class SchedulerPolicy {
 		public Optional<Range<BigDecimal>> getWeightRange() {
 			return weightRange;
 		}
+		
+		public Optional<Period> getPeriod() {
+			return period;
+		}
 
-		public boolean weightCheck(BigDecimal weight) {
+
+		public boolean canShip(BigDecimal weight) {
 			boolean result = true;
 
 			if (weightRange.isPresent()) {
@@ -144,24 +121,10 @@ public class SchedulerPolicy {
 
 		}
 
-		public PolicyRule(Comparator<Shipment> comparator) {
-			this(comparator, Optional.empty(), Optional.empty());
-		}
-
-		public PolicyRule(Comparator<Shipment> comparator, int duration) {
-			this(comparator, Optional.of(duration), Optional.empty());
-		}
-
-		public PolicyRule(Comparator<Shipment> comparator, int duration,
-				Range<BigDecimal> weightRange) {
-			this(comparator, Optional.of(duration), Optional.of(weightRange));
-		}
-
 		private PolicyRule(Comparator<Shipment> comparator,
-				Optional<Integer> duration,
-				Optional<Range<BigDecimal>> weightRange) {
+				Optional<Period> period, Optional<Range<BigDecimal>> weightRange) {
 			this.comparator = comparator;
-			this.duration = duration;
+			this.period = period;
 			this.weightRange = weightRange;
 		}
 

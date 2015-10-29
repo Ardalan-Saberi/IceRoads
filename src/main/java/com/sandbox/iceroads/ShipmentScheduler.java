@@ -7,10 +7,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.security.Policy;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.Temporal;
-import java.time.temporal.TemporalAmount;
-import java.time.temporal.TemporalUnit;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,15 +17,20 @@ import java.util.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sandbox.iceroads.SchedulerPolicy.PolicyRule;
+
 public class ShipmentScheduler {
+	private static final Duration DURATION_PER_STEP = Duration.ofHours(1L);
+	private static final int SHIPMENT_PER_STEP = 7;
 	private static final String DELIMITER = ",";
 	private static int idColumnOrder, unitColumnOrder, weightColumnOrder,
 			priorityColumnOrder;
-	public static final BigDecimal POUND_TO_KILOGRAM = new BigDecimal(
+	private static final BigDecimal POUND_TO_KILOGRAM = new BigDecimal(
 			0.45359237);
-	public static final int NONE_PRIORITY = 4;
-	public static final Duration DURATION_PER_STEP = Duration.ofHours(1L);
-	public static final int SHIPMENT_PER_STEP = 7;
+	private static final int NONE_PRIORITY = 4;
+
+	private static final DateTimeFormatter DATETIME_PATTERN = DateTimeFormatter
+			.ofPattern("yyyy-MM-dd, HH:mm");
 	private static Logger logger = (Logger) LoggerFactory
 			.getLogger(ShipmentScheduler.class);
 
@@ -52,56 +55,45 @@ public class ShipmentScheduler {
 		}
 	};
 
-	private static void schedule(File in, File out, SchedulerPolicy policy) {
+	public static void schedule(File in, File out, SchedulerPolicy policy) {
 
 		List<Shipment> shipmentList = parseShipmentList(in);
-		Instant time = policy.getStart();
-		Integer timeSlot = 1;
+		TimeSlot ts = new TimeSlot(policy.getStart());
+		LocalDateTime ruleStart = policy.getStart();
+		Shipment shipment;
+		String shipmentStr;
 
 		try (FileWriter writer = new FileWriter(out)) {
 
 			for (SchedulerPolicy.PolicyRule rule : policy.getRules()) {
 				shipmentList.sort(rule.getComparator());
+				Iterator<Shipment> it = shipmentList.iterator();
+				ruleStart = ts.getDateTime();
 
-				for (Shipment shipment : shipmentList) {
-					if (rule.weightCheck(shipment.getWeight())) {
+				while (ts.isRuleInEffect(rule, ruleStart) && it.hasNext()) {
+					shipment = it.next();
 
+					if (rule.canShip(shipment.getWeight())) {
+						shipmentStr = String.format("%s, %d. %d\n", ts
+								.getDateTime().format(DATETIME_PATTERN), ts
+								.getSlot(), shipment.getId());
+						writer.write(shipmentStr);
+						it.remove();
+
+						logger.debug("Shipment Scheduled (" + shipmentStr + ")");
+						ts.nextSlot();
 					}
 				}
-			}
+				while (ts.isRuleInEffect(rule, ruleStart)) {
+					ts.nextSlot();
+				}
 
+			}
 		} catch (IOException ioe) {
 			throw new SchedulerOutputFileIOException("Output File: "
 					+ out.getPath(), ioe);
 		}
 
-	}
-
-	private class TimeSlot {
-		private int slot = 0;
-		private Instant time;
-
-		public TimeSlot(Instant start) {
-			time = start;
-		}
-
-		public int getSlot() {
-			return slot;
-		}
-
-		public Instant getTime() {
-			return time;
-		}
-
-		public void nextSlot() {
-			if (slot < SHIPMENT_PER_STEP) {
-				slot++;
-			} else {
-				slot = 0;
-				time = time.plus(DURATION_PER_STEP);
-			}
-
-		}
 	}
 
 	private static List<Shipment> parseShipmentList(File file) {
@@ -175,6 +167,39 @@ public class ShipmentScheduler {
 			return new BigDecimal(weightStr).multiply(POUND_TO_KILOGRAM);
 		default:
 			throw new UnitNotSupprtedException();
+		}
+	}
+
+	static final class TimeSlot {
+		private int slot = 0;
+		private LocalDateTime datetime;
+
+		public TimeSlot(LocalDateTime init) {
+			datetime = init;
+		}
+
+		public int getSlot() {
+			return slot;
+		}
+
+		public LocalDateTime getDateTime() {
+			return datetime;
+		}
+
+		public boolean isRuleInEffect(PolicyRule rule, LocalDateTime ruleStart) {
+			return (ruleStart.compareTo(this.getDateTime()) >= 0 && (!rule
+					.getPeriod().isPresent() || ruleStart.plus(
+					rule.getPeriod().get()).compareTo(this.getDateTime()) < 0));
+		}
+
+		public void nextSlot() {
+			if (slot < SHIPMENT_PER_STEP) {
+				slot++;
+			} else {
+				slot = 0;
+				datetime = datetime.plus(DURATION_PER_STEP);
+			}
+
 		}
 	}
 
