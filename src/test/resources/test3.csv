@@ -1,0 +1,4 @@
+id,description,weight,unit,priority
+1,cement,15.5,ton,1
+5,fuel,40000,kg,2
+27,drill bits,17000,lbs,

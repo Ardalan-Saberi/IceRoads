@@ -1,11 +1,13 @@
 package com.sandbox.iceroads;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.security.Policy;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -55,7 +57,8 @@ public class ShipmentScheduler {
 		}
 	};
 
-	public static void schedule(File in, File out, SchedulerPolicy policy) {
+	public static void schedule(File in, File out, SchedulerPolicy policy)
+			throws IOException {
 
 		List<Shipment> shipmentList = parseShipmentList(in);
 		TimeSlot ts = new TimeSlot(policy.getStart());
@@ -74,7 +77,7 @@ public class ShipmentScheduler {
 					shipment = it.next();
 
 					if (rule.canShip(shipment.getWeight())) {
-						shipmentStr = String.format("%s, %d. %d\n", ts
+						shipmentStr = String.format("%s, %d, %d\n", ts
 								.getDateTime().format(DATETIME_PATTERN), ts
 								.getSlot(), shipment.getId());
 						writer.write(shipmentStr);
@@ -96,32 +99,36 @@ public class ShipmentScheduler {
 
 	}
 
-	private static List<Shipment> parseShipmentList(File file) {
+	private static List<Shipment> parseShipmentList(File file)
+			throws IOException {
 
 		List<Shipment> shipmentlist = new ArrayList<Shipment>();
 		int lineNumber = 0;
+		String line = null;
 
-		try (Scanner scanner = new Scanner(file);) {
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+				new FileInputStream(file)))) {
 
 			int columnPosition = 0;
+			line = reader.readLine();
 
-			for (String columnName : scanner.next().split(DELIMITER)) {
-				switch (columnName) {
-				case "id":
+			for (String columnName : line.split(DELIMITER)) {
+
+				if ("id".equals(columnName)) {
 					idColumnOrder = columnPosition;
-				case "unit":
+				} else if ("unit".equals(columnName)) {
 					unitColumnOrder = columnPosition;
-				case "priority":
+				} else if ("priority".equals(columnName)) {
 					priorityColumnOrder = columnPosition;
-				case "weight":
+				} else if ("weight".equals(columnName)) {
 					weightColumnOrder = columnPosition;
 				}
 				columnPosition++;
 			}
 
-			while (scanner.hasNext()) {
+			while ((line = reader.readLine()) != null) {
 				lineNumber++;
-				Shipment newShipment = parseShipment(scanner.next());
+				Shipment newShipment = parseShipment(line);
 				shipmentlist.add(newShipment);
 
 				logger.debug("Shipment Order Added (" + newShipment.toString()
@@ -149,7 +156,7 @@ public class ShipmentScheduler {
 
 		weight = parseWeight(args[weightColumnOrder], args[unitColumnOrder]);
 
-		if (args.length >= priorityColumnOrder) {
+		if (args.length > priorityColumnOrder) {
 			priority = Integer.parseInt(args[priorityColumnOrder]);
 			return new Shipment(id, weight, priority);
 		}
@@ -171,7 +178,7 @@ public class ShipmentScheduler {
 	}
 
 	static final class TimeSlot {
-		private int slot = 0;
+		private int slot = 1;
 		private LocalDateTime datetime;
 
 		public TimeSlot(LocalDateTime init) {
@@ -187,16 +194,18 @@ public class ShipmentScheduler {
 		}
 
 		public boolean isRuleInEffect(PolicyRule rule, LocalDateTime ruleStart) {
-			return (ruleStart.compareTo(this.getDateTime()) >= 0 && (!rule
-					.getPeriod().isPresent() || ruleStart.plus(
-					rule.getPeriod().get()).compareTo(this.getDateTime()) < 0));
+			return (ruleStart.compareTo(this.getDateTime()) <= 0 && (
+						(rule.getPeriod().isPresent() && 
+						 ruleStart.plus(rule.getPeriod().get()).compareTo(this.getDateTime()) > 0) 
+						|| 
+						!rule.getPeriod().isPresent()));
 		}
 
 		public void nextSlot() {
-			if (slot < SHIPMENT_PER_STEP) {
+			if (slot < SHIPMENT_PER_STEP + 1) {
 				slot++;
 			} else {
-				slot = 0;
+				slot = 1;
 				datetime = datetime.plus(DURATION_PER_STEP);
 			}
 

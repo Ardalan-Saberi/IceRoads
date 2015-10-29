@@ -30,6 +30,7 @@ public class App {
 		File in = new File("");
 		File out = new File("");
 		String message;
+		SchedulerPolicy policy;
 
 		if (args.length > 0) {
 			if (Paths.get(args[0]).toFile().isFile()) {
@@ -58,20 +59,22 @@ public class App {
 			System.out.println(HELP);
 		}
 
-		if (in.isFile() && out.isFile()) {
+		SchedulerPolicy.Builder builder = new SchedulerPolicy.Builder(
+				LocalDateTime.of(2015, 2, 1, 8, 0));
+		builder.addRule(
+				true,
+				Optional.of(Period.ofDays(15)),
+				Optional.of((new Range.Builder<BigDecimal>()).setUpperBound(
+						BigDecimal.valueOf(15000L)).build()));
+		builder.addRule(
+				false,
+				Optional.empty(),
+				Optional.of((new Range.Builder<BigDecimal>()).setLowerBound(
+						BigDecimal.valueOf(15000L)).build()));
+		builder.addRule(false, Optional.empty(), Optional.empty());
+		policy = builder.build();
 
-			SchedulerPolicy.Builder builder = new SchedulerPolicy.Builder(
-					LocalDateTime.of(2015, 2, 1, 8, 0));
-			builder.addRule(true, Optional.of(Period.ofDays(15)), Optional
-					.of((new Range.Builder<BigDecimal>()).setUpperBound(
-							BigDecimal.valueOf(15000L)).build()));
-			builder.addRule(false, Optional.empty(), Optional
-					.of((new Range.Builder<BigDecimal>()).setLowerBound(
-							BigDecimal.valueOf(15000L)).build()));
-			builder.addRule(false, Optional.empty(), Optional.empty());
-			builder.build();
-		}
-		// ShipmentScheduler.schedule(null, null, null);
+		ShipmentScheduler.schedule(in, out, policy);
 
 		logger.info("IceRoads Scheduler Finihsed (" + Instant.now() + ")");
 
