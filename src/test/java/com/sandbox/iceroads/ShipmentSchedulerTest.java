@@ -42,7 +42,7 @@ public class ShipmentSchedulerTest {
 		return Arrays.asList(new Object[][] {
 				/*{ "test1.csv", null, null, ShipmentFileParsingError.class },
 				{ "test2.csv", "result2.csv", "expected2.csv", null },*/
-				{ "test3.csv", "result3.csv", "expected3.csv", null },
+				//{ "test3.csv", "result3.csv", "expected3.csv", null },
 				{ "test4.csv", "result4.csv", "expected4.cs", null } });
 	}
 
@@ -67,8 +67,8 @@ public class ShipmentSchedulerTest {
 			policy = builder.build();
 
 			ShipmentScheduler.schedule(in, out, policy);
-			
-			assertTrue(FileUtils.contentEquals(exp, out));
+			System.out.println (FileUtils.contentEquals(out, exp));
+			assertTrue(FileUtils.contentEquals(out, exp));
 
 		} catch (Throwable t) {
 			if (expected == null || !expected.equals(t.getClass())) {

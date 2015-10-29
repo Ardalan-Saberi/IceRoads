@@ -14,7 +14,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Scanner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +31,7 @@ public class ShipmentScheduler {
 	private static final int NONE_PRIORITY = 4;
 
 	private static final DateTimeFormatter DATETIME_PATTERN = DateTimeFormatter
-			.ofPattern("yyyy-MM-dd, HH:mm");
+			.ofPattern("yyyy-MM-dd,HH:mm");
 	private static Logger logger = (Logger) LoggerFactory
 			.getLogger(ShipmentScheduler.class);
 
@@ -67,6 +66,7 @@ public class ShipmentScheduler {
 		String shipmentStr;
 
 		try (FileWriter writer = new FileWriter(out)) {
+			writer.write("day,hour,slot,id\n");
 
 			for (SchedulerPolicy.PolicyRule rule : policy.getRules()) {
 				shipmentList.sort(rule.getComparator());
@@ -77,7 +77,7 @@ public class ShipmentScheduler {
 					shipment = it.next();
 
 					if (rule.canShip(shipment.getWeight())) {
-						shipmentStr = String.format("%s, %d, %d\n", ts
+						shipmentStr = String.format("%s,%d,%d\n", ts
 								.getDateTime().format(DATETIME_PATTERN), ts
 								.getSlot(), shipment.getId());
 						writer.write(shipmentStr);
@@ -87,8 +87,10 @@ public class ShipmentScheduler {
 						ts.nextSlot();
 					}
 				}
-				while (ts.isRuleInEffect(rule, ruleStart)) {
-					ts.nextSlot();
+				if (rule.getPeriod().isPresent()) {
+					while (ts.isRuleInEffect(rule, ruleStart)) {
+						ts.nextSlot();
+					}
 				}
 
 			}
@@ -194,11 +196,10 @@ public class ShipmentScheduler {
 		}
 
 		public boolean isRuleInEffect(PolicyRule rule, LocalDateTime ruleStart) {
-			return (ruleStart.compareTo(this.getDateTime()) <= 0 && (
-						(rule.getPeriod().isPresent() && 
-						 ruleStart.plus(rule.getPeriod().get()).compareTo(this.getDateTime()) > 0) 
-						|| 
-						!rule.getPeriod().isPresent()));
+			return (ruleStart.compareTo(this.getDateTime()) <= 0 && ((rule
+					.getPeriod().isPresent() && ruleStart.plus(
+					rule.getPeriod().get()).compareTo(this.getDateTime()) > 0) || !rule
+					.getPeriod().isPresent()));
 		}
 
 		public void nextSlot() {

@@ -58,7 +58,7 @@ public class SchedulerPolicy {
 		public static Comparator<Shipment> DEFAULT_COMPARATOR = new Comparator<Shipment>() {
 			@Override
 			public int compare(Shipment o1, Shipment o2) {
-				return o2.getPriority() - o1.getPriority();
+				return o1.getPriority() - o2.getPriority();
 			}
 
 		};
@@ -69,7 +69,7 @@ public class SchedulerPolicy {
 				if (DEFAULT_COMPARATOR.compare(o1, o2) != 0) {
 					return DEFAULT_COMPARATOR.compare(o1, o2);
 				} else {
-					return o2.getWeight().subtract(o1.getWeight()).signum();
+					return o1.getWeight().subtract(o2.getWeight()).signum();
 				}
 			}
 		};
@@ -81,7 +81,7 @@ public class SchedulerPolicy {
 				if (DEFAULT_COMPARATOR.compare(o1, o2) != 0) {
 					return DEFAULT_COMPARATOR.compare(o1, o2);
 				} else {
-					return o1.getWeight().subtract(o2.getWeight()).signum();
+					return o2.getWeight().subtract(o1.getWeight()).signum();
 				}
 			}
 		};
