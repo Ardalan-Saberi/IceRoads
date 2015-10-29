@@ -46,9 +46,8 @@ public class App {
 					out = Paths.get(args[0]).toFile();
 				} else {
 					out = Files.createFile(
-							Paths.get("schedule-" + System.currentTimeMillis()
-									+ ".csv")).toFile();
-					message = "Output File Not Found.";
+							Paths.get(args[1])).toFile();
+					message = "Output File Created.";
 					logger.error(message + " (" + args[0] + ")");
 					System.out.println(message);
 				}
