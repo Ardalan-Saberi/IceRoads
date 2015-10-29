@@ -20,9 +20,13 @@ public class ShipmentScheduler {
 			.getLogger(ShipmentScheduler.class);
 
 	public static class UnitNotSupprtedException extends RuntimeException {
+
+		private static final long serialVersionUID = 1L;
 	};
 
 	public static class ShipmentFileParsingError extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
 		public ShipmentFileParsingError(String message, Throwable cause) {
 			super(message, cause);
 		}

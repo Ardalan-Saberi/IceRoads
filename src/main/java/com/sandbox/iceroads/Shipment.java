@@ -3,19 +3,19 @@ package com.sandbox.iceroads;
 import java.math.BigDecimal;
 
 class Shipment {
-	private final short id;
+	private final int id;
 	private final BigDecimal weight;
-	private final short priority;
+	private final int priority;
 	
 	
 
-	public Shipment(short id, BigDecimal weight, short priority) {
+	public Shipment(int id, BigDecimal weight, int priority) {
 		this.id = id;
 		this.priority = priority;
 		this.weight = weight;
 	}
 
-	public short getId() {
+	public int getId() {
 		return id;
 	}
 
@@ -23,7 +23,7 @@ class Shipment {
 		return weight;
 	}
 	
-	public short getPriority() {
+	public int getPriority() {
 		return priority;
 	}
 
