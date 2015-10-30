@@ -1,10 +1,13 @@
-Garner IceRoads Challange
+Rule-based Prioritized Shipment Scheduler
 
 Setup: 
 
 1- git clone https://github.com/Ardalan-Saberi/IceRoads.git
+
 2- mvn clean install
+
 3- got to target directory
+
 4- java -jar iceroads-jar-with-dependencies.jar sample.csv out.csv
 
 Usage: Usage: iceroads INPUT_CSV_FILE [OUTPUT_CSV_FILE]
